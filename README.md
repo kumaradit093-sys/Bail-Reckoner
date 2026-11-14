@@ -4,13 +4,14 @@ A basic frontend prototype for organizing undertrial case information. It curren
 
 ## Run the frontend
 
-From the repository root, start any static HTTP server. For example:
+Install dependencies and start the Vite development server from the repository root:
 
 ```sh
-python3 -m http.server 8000
+npm install
+npm run dev
 ```
 
-Then open <http://localhost:8000>. The frontend has no backend or database yet.
+Open the local URL printed by Vite (usually <http://localhost:5173>). The frontend has no backend or database yet.
 
 ## Current scope
 

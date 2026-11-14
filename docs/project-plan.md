@@ -113,7 +113,7 @@ For the MVP, checklist items may be stored as a simple list associated with a ca
 
 ## 6. Suggested basic architecture
 
-- **Frontend:** Responsive single-page web app with separate pages/components for dashboard, case form, and case detail.
+- **Frontend:** Responsive React single-page app built with Vite, with separate components for dashboard, case form, and case detail.
 - **Backend:** Small REST API responsible for validation, case/charge operations, date calculation, and errors.
 - **Database:** Relational database with a one-to-many relationship from cases to charges.
 - **Integration:** Frontend communicates with the backend over JSON HTTP endpoints; backend accesses the database through a small data-access layer.
