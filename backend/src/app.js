@@ -1,6 +1,7 @@
 import express from "express";
 import { fileURLToPath } from "node:url";
 import { casesRouter } from "./routes/cases.js";
+import { query } from "./db/database.js";
 
 const app = express();
 const frontendBuild = fileURLToPath(new URL("../../frontend/dist/", import.meta.url));
@@ -11,14 +12,29 @@ const notFound = (request, _response, next) => {
 };
 
 app.disable("x-powered-by");
+const allowedOrigins = new Set((process.env.CORS_ORIGIN || "").split(",").map((origin) => origin.trim()).filter(Boolean));
+app.use((request, response, next) => {
+  const origin = request.get("origin");
+  if (origin && allowedOrigins.has(origin)) {
+    response.setHeader("Access-Control-Allow-Origin", origin);
+    response.setHeader("Vary", "Origin");
+    response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+    response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  }
+  if (request.method === "OPTIONS") return response.sendStatus(origin && allowedOrigins.has(origin) ? 204 : 403);
+  next();
+});
 app.use(express.json({ limit: "100kb" }));
 
-app.get("/api/health", (_request, response) => response.json({ status: "ok" }));
+app.get("/api/health", async (_request, response) => {
+  await query("SELECT 1");
+  response.json({ status: "ok" });
+});
 app.use("/api/cases", casesRouter);
 
 app.use("/api", notFound);
 
-if (process.env.NODE_ENV === "production") {
+if (process.env.NODE_ENV === "production" && process.env.SERVE_FRONTEND !== "false") {
   app.use(express.static(frontendBuild));
   app.get("/{*path}", (_request, response, next) => {
     response.sendFile(fileURLToPath(new URL("../../frontend/dist/index.html", import.meta.url)), (error) => {

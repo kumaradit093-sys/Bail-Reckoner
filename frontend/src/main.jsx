@@ -22,7 +22,7 @@ function Shell({ children, current = "Cases", onDashboard, apiError, onRetry }) 
         <a href="#" aria-label="Cases" aria-current={current === "Cases" ? "page" : undefined} className={`nav-item ${current === "Cases" ? "active" : ""}`} onClick={(event) => { event.preventDefault(); onDashboard?.(); }}><span className="nav-icon" aria-hidden="true">▦</span><span className="nav-text">Cases</span></a>
       </nav>
       <div className="sidebar-bottom">
-        <div className="privacy-note"><strong>Demo workspace</strong>Fictional records are stored in a local SQLite file. Avoid entering real personal or case information.</div>
+        <div className="privacy-note"><strong>Demo workspace</strong>Fictional records are stored in the configured database. Avoid entering real personal or case information.</div>
         <div className="user-row"><div className="avatar" aria-hidden="true">LA</div><div className="user-meta"><div className="user-name">Legal Aid User</div><div className="user-role">Demo account</div></div></div>
       </div>
     </aside>
@@ -57,7 +57,7 @@ function Dashboard({ cases, query, onQuery, onCreate, onDetail, onDashboard, loa
         <div><button className="button button-quiet button-small" onClick={() => onDetail(item.id)} aria-label={`Open ${item.title}`}>View →</button></div>
       </div>)}</div> : <div className="empty-state"><div className="empty-icon" aria-hidden="true">⌕</div><h3>{cases.length ? "No matching cases" : "No cases yet"}</h3><p>{cases.length ? "Try a different search term." : "Add a case to start organizing the details."}</p>{!cases.length && <button className="button button-primary" onClick={onCreate}>＋ Add first case</button>}</div>}
     </section>
-    <Notice><strong>Demo only.</strong> This workspace helps organize information. It does not provide legal advice or determine bail eligibility. Example records are fictional and stored in the local database.</Notice>
+    <Notice><strong>Demo only.</strong> This workspace helps organize information. It does not provide legal advice or determine bail eligibility. Example records are fictional and stored in the configured database.</Notice>
   </div></Shell>;
 }
 
@@ -125,7 +125,7 @@ function DetailPage({ item, onBack, onEdit, onDelete, onChecklist, onDashboard, 
       <section className="panel detail-card"><h2>Case information</h2><div className="detail-fields"><div><div className="detail-label">Status</div><span className="status">{item.status}</span></div><div><div className="detail-label">Case reference</div><div className="detail-value">{item.reference || "Not recorded"}</div></div><div><div className="detail-label">Court / jurisdiction</div><div className="detail-value">{item.jurisdiction || "Not recorded"}</div></div><div><div className="detail-label">Custody start date</div><div className="detail-value">{fmtDate(item.custodyStartDate)}</div></div><div className="full"><div className="detail-label">Notes</div><div className="detail-value notes">{item.notes || "No notes added."}</div></div></div></section>
       <section className="panel detail-card"><h2>Charges <span className="cell-muted">({item.charges.length})</span></h2>{item.charges.length ? item.charges.map((charge, index) => <div className="charge-detail" key={`${charge.section}-${index}`}><div className="charge-index">{index + 1}</div><div><div className="charge-name">{charge.description || "Charge"}</div><div className="charge-meta">{charge.statute || "Act not specified"}{charge.section ? ` · Section ${charge.section}` : ""}</div></div></div>) : <div className="small-note">No charges recorded.</div>}</section>
       <section className="panel detail-card"><h2>Custody timeline</h2><div className="timeline"><span className="timeline-dot" aria-hidden="true"></span><div><div className="timeline-title">Custody started</div><div className="timeline-date">{fmtDate(item.custodyStartDate)}</div></div></div><div className="duration-box"><div className="duration-number">{relativeDuration(elapsed)}</div><div className="duration-caption">Elapsed since the recorded custody start date{elapsed != null ? ` · ${elapsed} days` : ""}</div></div></section>
-    </div><aside className="detail-side"><section className="panel detail-card"><h2>Preparation checklist</h2><div className="checklist">{checklistItems.map((label, index) => <label className="check-row" key={label}><input type="checkbox" checked={Boolean(item.checklist?.[index])} onChange={(event) => onChecklist(index, event.target.checked)} /><span>{label}</span></label>)}</div><div className="check-help">These are general organization prompts, not a complete list of legal requirements. Review next steps with a qualified legal aid provider.</div></section><section className="panel detail-card"><h2>About this record</h2><div className="detail-label">Created for</div><div className="detail-value detail-gap">Demo workspace</div><div className="detail-label">Data source</div><div className="detail-value">Fictional sample information</div><div className="check-help">Records are saved in this app's local SQLite database.</div></section></aside></div>
+    </div><aside className="detail-side"><section className="panel detail-card"><h2>Preparation checklist</h2><div className="checklist">{checklistItems.map((label, index) => <label className="check-row" key={label}><input type="checkbox" checked={Boolean(item.checklist?.[index])} onChange={(event) => onChecklist(index, event.target.checked)} /><span>{label}</span></label>)}</div><div className="check-help">These are general organization prompts, not a complete list of legal requirements. Review next steps with a qualified legal aid provider.</div></section><section className="panel detail-card"><h2>About this record</h2><div className="detail-label">Created for</div><div className="detail-value detail-gap">Demo workspace</div><div className="detail-label">Data source</div><div className="detail-value">Fictional sample information</div><div className="check-help">Records are saved in the app's configured database.</div></section></aside></div>
     <Notice><strong>Informational only.</strong> This page organizes case information and calculates elapsed time from the recorded date. It does not assess legal eligibility or predict a bail outcome.</Notice>
   </div></Shell>;
 }
@@ -175,7 +175,7 @@ function App() {
     }
   };
   const deleteCase = async () => {
-    if (!selected || !window.confirm(`Permanently delete “${selected.title}” and its charges from this local database?`)) return;
+    if (!selected || !window.confirm(`Permanently delete “${selected.title}” and its charges from the configured database?`)) return;
     setApiError("");
     try {
       await casesApi.remove(selected.id);

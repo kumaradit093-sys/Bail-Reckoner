@@ -68,41 +68,41 @@ function normalizeCase(body) {
   };
 }
 
-function requireCase(id) {
-  const item = getCase(id);
+async function requireCase(id) {
+  const item = await getCase(id);
   if (!item) throw new HttpError(404, "Case not found.");
   return item;
 }
 
-router.get("/", (request, response) => {
-  response.json(listCases(String(request.query.search || "")));
+router.get("/", async (request, response) => {
+  response.json(await listCases(String(request.query.search || "")));
 });
 
-router.get("/:id", (request, response) => {
-  response.json(requireCase(request.params.id));
+router.get("/:id", async (request, response) => {
+  response.json(await requireCase(request.params.id));
 });
 
-router.post("/", (request, response) => {
-  response.status(201).json(createCase(normalizeCase(request.body)));
+router.post("/", async (request, response) => {
+  response.status(201).json(await createCase(normalizeCase(request.body)));
 });
 
-router.put("/:id", (request, response) => {
-  requireCase(request.params.id);
-  response.json(updateCase(request.params.id, normalizeCase(request.body)));
+router.put("/:id", async (request, response) => {
+  await requireCase(request.params.id);
+  response.json(await updateCase(request.params.id, normalizeCase(request.body)));
 });
 
-router.patch("/:id/checklist", (request, response) => {
-  requireCase(request.params.id);
+router.patch("/:id/checklist", async (request, response) => {
+  await requireCase(request.params.id);
   const { index, checked } = request.body || {};
   if (!Number.isInteger(index) || index < 0 || index >= checklistLength || typeof checked !== "boolean") {
     throw new HttpError(400, "Provide a valid checklist index and checked value.");
   }
-  response.json(updateChecklist(request.params.id, index, checked));
+  response.json(await updateChecklist(request.params.id, index, checked));
 });
 
-router.delete("/:id", (request, response) => {
-  requireCase(request.params.id);
-  deleteCase(request.params.id);
+router.delete("/:id", async (request, response) => {
+  await requireCase(request.params.id);
+  await deleteCase(request.params.id);
   response.status(204).end();
 });
 

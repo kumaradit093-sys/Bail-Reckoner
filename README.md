@@ -1,45 +1,32 @@
 # Bail Reckoner
 
-A basic full-stack prototype for organizing undertrial case information. It uses fictional sample records and a local SQLite database. Do not enter real personal or case information.
+A basic full-stack prototype for organizing undertrial case information. It uses fictional sample records, local SQLite for development, and PostgreSQL (including Neon) when `DATABASE_URL` is configured. Do not enter real personal or case information.
 
-## Run the app
+## Run locally
 
-Install dependencies once. `.env.example` documents the settings. A local, gitignored `.env` is already supplied for this workspace; on a fresh checkout, copy the template with `cp .env.example .env` before changing local settings. The backend and Vite proxy read it automatically. Then start both services in separate terminal windows from the repository root:
-
-```sh
-npm install
-```
-
-Terminal 1 — backend API:
+Install dependencies. On a fresh checkout, copy `.env.example` to `.env`. Leave `DATABASE_URL` unset for SQLite, or set it to a PostgreSQL connection string to use Neon. Never commit a real database URL.
 
 ```sh
+npm ci
 npm run server
 ```
 
-Terminal 2 — React frontend:
+In a second terminal, run `npm run dev` and open the local URL printed by Vite (usually <http://localhost:5173>). Vite forwards `/api` requests to the backend on port 3001. On first start, the backend applies the configured database migrations and inserts fictional demo records. Case edits persist after restarting the backend.
 
-```sh
-npm run dev
-```
+Node.js 22.13 or later is required. `BAIL_RECKONER_DB` controls the local SQLite file path; setting `DATABASE_URL` selects PostgreSQL. The Vite proxy uses `PORT` by default; `API_PROXY_TARGET` is an optional override. Docker Compose uses SQLite at `/data/bail-reckoner.sqlite` inside its persistent volume.
 
-Open the local URL printed by Vite (usually <http://localhost:5173>). Vite forwards `/api` requests to the backend on port 3001. On its first start, the backend creates `database/bail-reckoner.sqlite`, applies SQL migrations, and inserts fictional demo records. Case edits persist after restarting the backend.
-
-Node.js 22.13 or later is required for the built-in SQLite module. The module's stability status depends on the Node release; the detected Node 24.7 runtime classifies it as experimental, so this setup is for the local MVP rather than production legal data. `BAIL_RECKONER_DB` controls the local database file path. The Vite proxy uses `PORT` by default; `API_PROXY_TARGET` is an optional override. Docker Compose always sets the database path to `/data/bail-reckoner.sqlite` inside its persistent volume.
-
-## Test and build
+## Build and deploy
 
 ```sh
 npm test
 npm run build
 ```
 
-## Container deployment
+For Cloudflare Pages + Render + Neon environment variables and build settings, see [deployment notes](docs/deployment.md). Docker Compose is also available for a local demo:
 
 ```sh
 docker compose up --build -d
 ```
-
-The app is available at <http://localhost:3001>. See [deployment notes](docs/deployment.md) for storage and demo-only limits.
 
 ## Project structure
 
@@ -47,12 +34,12 @@ The app is available at <http://localhost:3001>. See [deployment notes](docs/dep
 frontend/                 React app and styles
   src/                    React screens and API client
 backend/                  Express API
-  src/routes/              HTTP endpoints and request validation
-  src/data/                Case repository used by API routes
-  src/db/                  SQLite connection and migration runner
-database/                  SQLite file, migrations, and demo seed
-shared/                    Shared date and checklist definitions
-docs/                      Project plan and requirements
+  src/routes/             HTTP endpoints and request validation
+  src/data/               Case repository used by API routes
+  src/db/                 SQLite/PostgreSQL connection and migrations
+database/                 SQLite and PostgreSQL migrations, demo seed
+shared/                   Shared date and checklist definitions
+docs/                     Project plan and deployment guide
 ```
 
 ## Current scope

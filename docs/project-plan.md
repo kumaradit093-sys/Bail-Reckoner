@@ -115,12 +115,12 @@ For the MVP, checklist items may be stored as a simple list associated with a ca
 
 - **Frontend:** Responsive React single-page app built with Vite, with separate components for dashboard, case form, and case detail.
 - **Backend:** Small REST API responsible for validation, case/charge operations, date calculation, and errors.
-- **Database:** SQLite for the local MVP, with a relational one-to-many relationship from cases to charges and linked checklist rows.
+- **Database:** SQLite for local development and PostgreSQL for hosted deployments (Neon), with a relational one-to-many relationship from cases to charges and linked checklist rows.
 - **Integration:** Frontend communicates with the backend over JSON HTTP endpoints; backend accesses the database through a small data-access layer.
 
-React files live under `frontend/`, Express routes under `backend/src/routes/`, and the case repository under `backend/src/data/`. SQLite connection and migration setup live under `backend/src/db/`; SQL schema and seed migrations live in `database/migrations/`.
+React files live under `frontend/`, Express routes under `backend/src/routes/`, and the case repository under `backend/src/data/`. Database connection and migration setup live under `backend/src/db/`; SQLite migrations live in `database/migrations/` and PostgreSQL migrations in `database/postgres-migrations/`.
 
-This repository uses React with Vite, Express, and SQLite. Keep the implementation easy to run locally and avoid adding services the MVP does not need.
+This repository uses React with Vite, Express, and SQLite/PostgreSQL. Keep the implementation easy to run locally and avoid adding services the MVP does not need.
 
 ## 7. MVP acceptance criteria
 
