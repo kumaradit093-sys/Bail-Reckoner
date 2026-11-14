@@ -118,7 +118,9 @@ For the MVP, checklist items may be stored as a simple list associated with a ca
 - **Database:** Relational database with a one-to-many relationship from cases to charges.
 - **Integration:** Frontend communicates with the backend over JSON HTTP endpoints; backend accesses the database through a small data-access layer.
 
-Choose specific technologies after checking the repository and deployment requirements. Keep the first implementation conventional and easy to run locally rather than adding services the MVP does not need.
+For the Phase 2 integration milestone, the API uses temporary in-memory storage. Phase 3 replaces that storage with the database; restarting the API currently resets records.
+
+This repository uses React with Vite for the frontend and Express for the API. The relational database choice is deferred to Phase 3. Keep the implementation easy to run locally and avoid adding services the MVP does not need.
 
 ## 7. MVP acceptance criteria
 

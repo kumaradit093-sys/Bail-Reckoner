@@ -1,20 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-
-const initialCases = [
-  {
-    id: "BR-24018", title: "State vs. Arjun Mehta", reference: "CRL.MC. 1842 / 2024", jurisdiction: "District Court, Pune", status: "In progress", custodyStartDate: "2025-02-12", notes: "Case details entered for demonstration purposes.",
-    charges: [{ statute: "Bharatiya Nyaya Sanhita", section: "115(2)", description: "Voluntarily causing hurt" }, { statute: "Bharatiya Nyaya Sanhita", section: "351(2)", description: "Criminal intimidation" }], checklist: [false, true, false, false],
-  },
-  {
-    id: "BR-24012", title: "State vs. Priya Nair", reference: "C.C. 762 / 2025", jurisdiction: "JMFC Court, Kochi", status: "Information needed", custodyStartDate: "2025-08-04", notes: "Confirm next hearing date with the legal aid provider.",
-    charges: [{ statute: "Information Technology Act", section: "66C", description: "Identity theft" }], checklist: [true, false, false, false],
-  },
-  {
-    id: "BR-23986", title: "State vs. Rohan Das", reference: "G.R. 319 / 2025", jurisdiction: "Sessions Court, Kolkata", status: "In progress", custodyStartDate: "2025-05-21", notes: "Sample record. Verify all case facts before relying on them.",
-    charges: [{ statute: "Bharatiya Nyaya Sanhita", section: "303(2)", description: "Theft" }], checklist: [false, false, false, false],
-  },
-];
+import { casesApi } from "./api.js";
 
 const checklistLabels = [
   "Confirm case reference and court details",
@@ -48,7 +34,7 @@ function relativeDuration(days) {
   return parts.join(", ");
 }
 
-function Shell({ children, current = "Cases", onDashboard }) {
+function Shell({ children, current = "Cases", onDashboard, apiError, onRetry }) {
   return <div className="shell">
     <aside className="sidebar" aria-label="Main navigation">
       <a className="brand" href="#" onClick={(event) => { event.preventDefault(); onDashboard?.(); }}>
@@ -59,12 +45,13 @@ function Shell({ children, current = "Cases", onDashboard }) {
       <a href="#" className={`nav-item ${current === "Cases" ? "active" : ""}`} onClick={(event) => { event.preventDefault(); onDashboard?.(); }}><span className="nav-icon" aria-hidden="true">▦</span><span className="nav-text">Cases</span></a>
       <a href="#" className="nav-item" onClick={(event) => event.preventDefault()}><span className="nav-icon" aria-hidden="true">⌕</span><span className="nav-text">Legal reference</span></a>
       <div className="sidebar-bottom">
-        <div className="privacy-note"><strong>Demo workspace</strong>Sample records are stored only in this browser session. Avoid entering real personal or case information.</div>
+        <div className="privacy-note"><strong>Demo workspace</strong>Sample records are held in backend memory and reset when the backend restarts. Avoid entering real personal or case information.</div>
         <div className="user-row"><div className="avatar" aria-hidden="true">LA</div><div className="user-meta"><div className="user-name">Legal Aid User</div><div className="user-role">Demo account</div></div></div>
       </div>
     </aside>
     <main className="main">
       <header className="topbar"><div className="crumb">Workspace <span aria-hidden="true">/</span> <strong>{current}</strong></div><div className="top-right"><span className="demo-pill">DEMO · SAMPLE DATA</span></div></header>
+      {apiError && <div className="api-error" role="alert"><span>{apiError}</span><button className="button button-quiet button-small" onClick={onRetry}>Retry</button></div>}
       {children}
     </main>
   </div>;
@@ -74,10 +61,10 @@ function Notice({ children }) {
   return <div className="notice">{children}</div>;
 }
 
-function Dashboard({ cases, query, onQuery, onCreate, onDetail, onDashboard }) {
+function Dashboard({ cases, query, onQuery, onCreate, onDetail, onDashboard, loading, apiError, onRetry }) {
   const filtered = cases.filter((item) => `${item.title} ${item.reference} ${item.jurisdiction}`.toLowerCase().includes(query.toLowerCase()));
   const totalCharges = cases.reduce((sum, item) => sum + item.charges.length, 0);
-  return <Shell onDashboard={onDashboard}><div className="content">
+  return <Shell onDashboard={onDashboard} apiError={apiError} onRetry={onRetry}><div className="content">
     <div className="page-head"><div><div className="eyebrow">Your workspace</div><h1>Good evening</h1><p className="intro">A clear place to organize case information and preparation.</p></div><button className="button button-primary" onClick={onCreate}><span aria-hidden="true">＋</span><span className="button-text-short">New case</span></button></div>
     <section className="stats" aria-label="Workspace summary">
       <article className="stat-card"><div className="stat-top"><span>Total cases</span><span className="stat-symbol" aria-hidden="true">▦</span></div><div className="stat-value">{cases.length}</div><div className="stat-foot">In this workspace</div></article>
@@ -85,7 +72,7 @@ function Dashboard({ cases, query, onQuery, onCreate, onDetail, onDashboard }) {
       <article className="stat-card"><div className="stat-top"><span>Need information</span><span className="stat-symbol" aria-hidden="true">⌁</span></div><div className="stat-value">{cases.filter((item) => item.status === "Information needed").length}</div><div className="stat-foot">Case details to follow up</div></article>
     </section>
     <section className="panel"><div className="panel-head"><div><h2>Recent cases</h2><div className="panel-sub">Your case records in one place</div></div><label className="searchbox"><span className="search-symbol" aria-hidden="true">⌕</span><span className="sr-only">Search cases</span><input type="search" placeholder="Search cases..." value={query} onChange={(event) => onQuery(event.target.value)} /></label></div>
-      {filtered.length ? <div className="case-list">{filtered.map((item) => <div className="case-row" key={item.id}>
+      {loading ? <div className="empty-state" role="status"><h3>Loading cases…</h3><p>Connecting to the case service.</p></div> : filtered.length ? <div className="case-list">{filtered.map((item) => <div className="case-row" key={item.id}>
         <div><button className="case-title as-link" onClick={() => onDetail(item.id)}>{item.title || "Untitled case"}</button><div className="case-ref">{item.reference || item.id}</div></div>
         <div><div className="cell-text">{item.jurisdiction || "Not specified"}</div><div className="cell-muted">Jurisdiction</div></div>
         <div><div className="cell-text">{fmtDate(item.custodyStartDate)}</div><div className="cell-muted">Custody start</div></div>
@@ -93,7 +80,7 @@ function Dashboard({ cases, query, onQuery, onCreate, onDetail, onDashboard }) {
         <div><button className="button button-quiet button-small" onClick={() => onDetail(item.id)} aria-label={`Open ${item.title}`}>View →</button></div>
       </div>)}</div> : <div className="empty-state"><div className="empty-icon" aria-hidden="true">⌕</div><h3>{cases.length ? "No matching cases" : "No cases yet"}</h3><p>{cases.length ? "Try a different search term." : "Add a case to start organizing the details."}</p>{!cases.length && <button className="button button-primary" onClick={onCreate}>＋ Add first case</button>}</div>}
     </section>
-    <Notice><strong>Demo only.</strong> This workspace helps organize information. It does not provide legal advice or determine bail eligibility. Example records are fictional and reset when you refresh.</Notice>
+    <Notice><strong>Demo only.</strong> This workspace helps organize information. It does not provide legal advice or determine bail eligibility. Example records are fictional and reset when the backend restarts.</Notice>
   </div></Shell>;
 }
 
@@ -111,7 +98,7 @@ function ChargeFields({ charges, onChange }) {
   </div></section>;
 }
 
-function CaseForm({ existing, onSave, onCancel, onDashboard }) {
+function CaseForm({ existing, onSave, onCancel, onDashboard, saving, apiError, onRetry }) {
   const [charges, setCharges] = useState(existing?.charges?.length ? existing.charges : [{ statute: "", section: "", description: "" }]);
   const [errors, setErrors] = useState({});
   const today = new Date().toISOString().slice(0, 10);
@@ -137,7 +124,7 @@ function CaseForm({ existing, onSave, onCancel, onDashboard }) {
     }
     onSave(values);
   }
-  return <Shell onDashboard={onDashboard}><div className="content"><div className="form-wrap">
+  return <Shell onDashboard={onDashboard} apiError={apiError} onRetry={onRetry}><div className="content"><div className="form-wrap">
     <div className="page-head"><div><div className="eyebrow">Case workspace</div><h1>{existing ? "Edit case" : "Add a case"}</h1><p className="intro">Enter the case information you have. You can update it later.</p></div></div>
     <form onSubmit={submit} noValidate>
       <section className="panel form-card"><h2>Case details</h2><p>Basic information to help identify and organize this record.</p><div className="form-grid">
@@ -149,58 +136,90 @@ function CaseForm({ existing, onSave, onCancel, onDashboard }) {
         <div className="field full"><label htmlFor="case-notes">Notes <span className="optional">(optional)</span></label><textarea id="case-notes" name="notes" maxLength="1200" defaultValue={existing?.notes || ""} placeholder="Add brief context or follow-up notes" /></div>
       </div></section>
       <ChargeFields charges={charges} onChange={setCharges} />
-      <div className="form-actions"><span className="small-note">* Required field</span><div className="actions-right"><button type="button" className="button button-quiet" onClick={onCancel}>Cancel</button><button type="submit" className="button button-primary">{existing ? "Save changes" : "Create case"}</button></div></div>
+      <div className="form-actions"><span className="small-note">* Required field</span><div className="actions-right"><button type="button" className="button button-quiet" onClick={onCancel}>Cancel</button><button type="submit" className="button button-primary" disabled={saving}>{saving ? "Saving…" : existing ? "Save changes" : "Create case"}</button></div></div>
     </form>
   </div></div></Shell>;
 }
 
-function DetailPage({ item, onBack, onEdit, onDelete, onChecklist, onDashboard }) {
+function DetailPage({ item, onBack, onEdit, onDelete, onChecklist, onDashboard, apiError, onRetry }) {
   if (!item) return null;
   const elapsed = daysInCustody(item.custodyStartDate);
-  return <Shell onDashboard={onDashboard}><div className="content">
+  return <Shell onDashboard={onDashboard} apiError={apiError} onRetry={onRetry}><div className="content">
     <div className="page-head"><div><div className="eyebrow"><button className="eyebrow-link" onClick={onBack}>Cases</button> / Case overview</div><h1>{item.title || "Untitled case"}</h1><p className="intro">{item.reference || item.id} <span aria-hidden="true">·</span> {item.jurisdiction || "Jurisdiction not specified"}</p></div><div className="actions-right"><button className="button button-quiet" onClick={onDelete}>Delete</button><button className="button button-primary" onClick={onEdit}>Edit case</button></div></div>
     <div className="detail-grid"><div>
       <section className="panel detail-card"><h2>Case information</h2><div className="detail-fields"><div><div className="detail-label">Status</div><span className="status">{item.status}</span></div><div><div className="detail-label">Case reference</div><div className="detail-value">{item.reference || "Not recorded"}</div></div><div><div className="detail-label">Court / jurisdiction</div><div className="detail-value">{item.jurisdiction || "Not recorded"}</div></div><div><div className="detail-label">Custody start date</div><div className="detail-value">{fmtDate(item.custodyStartDate)}</div></div><div className="full"><div className="detail-label">Notes</div><div className="detail-value notes">{item.notes || "No notes added."}</div></div></div></section>
       <section className="panel detail-card"><h2>Charges <span className="cell-muted">({item.charges.length})</span></h2>{item.charges.length ? item.charges.map((charge, index) => <div className="charge-detail" key={`${charge.section}-${index}`}><div className="charge-index">{index + 1}</div><div><div className="charge-name">{charge.description || "Charge"}</div><div className="charge-meta">{charge.statute || "Act not specified"}{charge.section ? ` · Section ${charge.section}` : ""}</div></div></div>) : <div className="small-note">No charges recorded.</div>}</section>
       <section className="panel detail-card"><h2>Custody timeline</h2><div className="timeline"><span className="timeline-dot" aria-hidden="true"></span><div><div className="timeline-title">Custody started</div><div className="timeline-date">{fmtDate(item.custodyStartDate)}</div></div></div><div className="duration-box"><div className="duration-number">{relativeDuration(elapsed)}</div><div className="duration-caption">Elapsed since the recorded custody start date{elapsed != null ? ` · ${elapsed} days` : ""}</div></div></section>
-    </div><aside className="detail-side"><section className="panel detail-card"><h2>Preparation checklist</h2><div className="checklist">{checklistLabels.map((label, index) => <label className="check-row" key={label}><input type="checkbox" checked={Boolean(item.checklist?.[index])} onChange={(event) => onChecklist(index, event.target.checked)} /><span>{label}</span></label>)}</div><div className="check-help">These are general organization prompts, not a complete list of legal requirements. Review next steps with a qualified legal aid provider.</div></section><section className="panel detail-card"><h2>About this record</h2><div className="detail-label">Created for</div><div className="detail-value detail-gap">Demo workspace</div><div className="detail-label">Data source</div><div className="detail-value">Fictional sample information</div><div className="check-help">Information entered here stays in this browser session and resets when the page is refreshed.</div></section></aside></div>
+    </div><aside className="detail-side"><section className="panel detail-card"><h2>Preparation checklist</h2><div className="checklist">{checklistLabels.map((label, index) => <label className="check-row" key={label}><input type="checkbox" checked={Boolean(item.checklist?.[index])} onChange={(event) => onChecklist(index, event.target.checked)} /><span>{label}</span></label>)}</div><div className="check-help">These are general organization prompts, not a complete list of legal requirements. Review next steps with a qualified legal aid provider.</div></section><section className="panel detail-card"><h2>About this record</h2><div className="detail-label">Created for</div><div className="detail-value detail-gap">Demo workspace</div><div className="detail-label">Data source</div><div className="detail-value">Fictional sample information</div><div className="check-help">Records are held in backend memory and reset when the backend restarts.</div></section></aside></div>
     <Notice><strong>Informational only.</strong> This page organizes case information and calculates elapsed time from the recorded date. It does not assess legal eligibility or predict a bail outcome.</Notice>
   </div></Shell>;
 }
 
 function App() {
-  const [cases, setCases] = useState(initialCases);
+  const [cases, setCases] = useState([]);
   const [page, setPage] = useState("dashboard");
   const [selectedId, setSelectedId] = useState(null);
   const [query, setQuery] = useState("");
   const [toast, setToast] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [apiError, setApiError] = useState("");
   const selected = cases.find((item) => item.id === selectedId) || null;
   const go = (nextPage, id = null) => { setPage(nextPage); setSelectedId(id); setQuery(""); window.scrollTo(0, 0); };
   const notify = (message) => { setToast(message); window.setTimeout(() => setToast(""), 2400); };
-  const save = (values) => {
-    if (selectedId) {
-      setCases((current) => current.map((item) => item.id === selectedId ? { ...item, ...values } : item));
-      go("detail", selectedId);
-      notify("Case changes saved for this session.");
-    } else {
-      const item = { ...values, id: `BR-${Date.now().toString().slice(-6)}`, checklist: checklistLabels.map(() => false) };
-      setCases((current) => [item, ...current]);
-      go("detail", item.id);
-      notify("Case added to this session.");
+  const loadCases = async () => {
+    setLoading(true);
+    setApiError("");
+    try {
+      setCases(await casesApi.list());
+    } catch (error) {
+      setApiError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
-  const deleteCase = () => {
-    if (!selected || !window.confirm(`Delete “${selected.title}” from this demo session?`)) return;
-    setCases((current) => current.filter((item) => item.id !== selected.id));
-    go("dashboard");
-    notify("Case deleted from this session.");
+  useEffect(() => { loadCases(); }, []);
+  const save = async (values) => {
+    setSaving(true);
+    setApiError("");
+    try {
+      const item = selectedId ? await casesApi.update(selectedId, values) : await casesApi.create(values);
+      setCases((current) => selectedId ? current.map((entry) => entry.id === item.id ? item : entry) : [item, ...current]);
+      go("detail", item.id);
+      notify(selectedId ? "Case changes saved." : "Case added.");
+    } catch (error) {
+      setApiError(error.message);
+    } finally {
+      setSaving(false);
+    }
   };
-  const updateChecklist = (index, checked) => setCases((current) => current.map((item) => item.id === selectedId ? { ...item, checklist: item.checklist.map((value, i) => i === index ? checked : value) } : item));
+  const deleteCase = async () => {
+    if (!selected || !window.confirm(`Delete “${selected.title}” from this demo session?`)) return;
+    setApiError("");
+    try {
+      await casesApi.remove(selected.id);
+      setCases((current) => current.filter((item) => item.id !== selected.id));
+      go("dashboard");
+      notify("Case deleted.");
+    } catch (error) {
+      setApiError(error.message);
+    }
+  };
+  const updateChecklist = async (index, checked) => {
+    setApiError("");
+    try {
+      const item = await casesApi.updateChecklist(selectedId, index, checked);
+      setCases((current) => current.map((entry) => entry.id === item.id ? item : entry));
+    } catch (error) {
+      setApiError(error.message);
+    }
+  };
+  const dashboardProps = { cases, query, onQuery: setQuery, onCreate: () => go("form"), onDetail: (id) => go("detail", id), onDashboard: () => go("dashboard"), loading, apiError, onRetry: loadCases };
 
   let view;
-  if (page === "form") view = <CaseForm key={selectedId || "new"} existing={selected} onSave={save} onCancel={() => go(selected ? "detail" : "dashboard", selected?.id || null)} onDashboard={() => go("dashboard")} />;
-  else if (page === "detail") view = selected ? <DetailPage item={selected} onBack={() => go("dashboard")} onEdit={() => go("form", selected.id)} onDelete={deleteCase} onChecklist={updateChecklist} onDashboard={() => go("dashboard")} /> : <Dashboard cases={cases} query={query} onQuery={setQuery} onCreate={() => go("form")} onDetail={(id) => go("detail", id)} onDashboard={() => go("dashboard")} />;
-  else view = <Dashboard cases={cases} query={query} onQuery={setQuery} onCreate={() => go("form")} onDetail={(id) => go("detail", id)} onDashboard={() => go("dashboard")} />;
+  if (page === "form") view = <CaseForm key={selectedId || "new"} existing={selected} onSave={save} saving={saving} apiError={apiError} onRetry={loadCases} onCancel={() => go(selected ? "detail" : "dashboard", selected?.id || null)} onDashboard={() => go("dashboard")} />;
+  else if (page === "detail") view = selected ? <DetailPage item={selected} onBack={() => go("dashboard")} onEdit={() => go("form", selected.id)} onDelete={deleteCase} onChecklist={updateChecklist} onDashboard={() => go("dashboard")} apiError={apiError} onRetry={loadCases} /> : <Dashboard {...dashboardProps} />;
+  else view = <Dashboard {...dashboardProps} />;
 
   return <>{view}<div className={`toast ${toast ? "show" : ""}`} role="status" aria-live="polite">{toast}</div></>;
 }

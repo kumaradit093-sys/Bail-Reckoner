@@ -1,17 +1,28 @@
 # Bail Reckoner
 
-A basic frontend prototype for organizing undertrial case information. It currently uses fictional sample records and in-memory browser state; changes reset when the page is refreshed. Do not enter real personal or case information.
+A basic full-stack prototype for organizing undertrial case information. It uses fictional sample records and in-memory server state; changes reset when the backend restarts. Do not enter real personal or case information.
 
-## Run the frontend
+## Run the app
 
-Install dependencies and start the Vite development server from the repository root:
+Install dependencies once, then start both services in separate terminal windows from the repository root:
 
 ```sh
 npm install
+```
+
+Terminal 1 — backend API:
+
+```sh
+npm run server
+```
+
+Terminal 2 — React frontend:
+
+```sh
 npm run dev
 ```
 
-Open the local URL printed by Vite (usually <http://localhost:5173>). The frontend has no backend or database yet.
+Open the local URL printed by Vite (usually <http://localhost:5173>). Vite forwards `/api` requests to the backend on port 3001. The API stores records in memory until Phase 3 adds a database.
 
 ## Current scope
 
