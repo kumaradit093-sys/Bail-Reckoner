@@ -64,12 +64,13 @@ function insertChecklist(caseId, checklist) {
 
 export function listCases(search = "") {
   const query = search.trim();
+  const escapedQuery = query.replace(/[\\%_]/g, "\\$&");
   const rows = query
     ? database.prepare(`
         SELECT ${caseColumns} FROM cases
-        WHERE title LIKE ? OR reference LIKE ? OR jurisdiction LIKE ?
+        WHERE title LIKE ? ESCAPE '\\' OR reference LIKE ? ESCAPE '\\' OR jurisdiction LIKE ? ESCAPE '\\'
         ORDER BY created_at DESC, id DESC
-      `).all(`%${query}%`, `%${query}%`, `%${query}%`)
+      `).all(`%${escapedQuery}%`, `%${escapedQuery}%`, `%${escapedQuery}%`)
     : database.prepare(`SELECT ${caseColumns} FROM cases ORDER BY created_at DESC, id DESC`).all();
   return rows.map(toCase);
 }

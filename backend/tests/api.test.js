@@ -30,6 +30,8 @@ test("case API validates input and persists case, charge, and checklist changes"
     assert.equal(initialCases.length, 3);
     assert.equal(initialCases[0].title, "State vs. Arjun Mehta");
     assert.equal(initialCases[0].charges.length, 2);
+    const wildcardSearch = await fetch(`${baseUrl}/api/cases?search=%25`);
+    assert.deepEqual(await wildcardSearch.json(), []);
 
     const missingTitle = await fetch(`${baseUrl}/api/cases`, {
       method: "POST",
@@ -45,6 +47,14 @@ test("case API validates input and persists case, charge, and checklist changes"
       body: JSON.stringify({ title: "Future date", custodyStartDate: "2999-01-01" }),
     });
     assert.equal(invalidDate.status, 400);
+
+    const malformedJson = await fetch(`${baseUrl}/api/cases`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{invalid json",
+    });
+    assert.equal(malformedJson.status, 400);
+    assert.match((await malformedJson.json()).error, /valid JSON/i);
 
     const createdResponse = await fetch(`${baseUrl}/api/cases`, {
       method: "POST",
@@ -67,6 +77,15 @@ test("case API validates input and persists case, charge, and checklist changes"
     assert.ok(created.id.startsWith("BR-"));
     assert.equal(created.charges.length, 2);
     assert.deepEqual(created.checklist, [false, false, false, false]);
+
+    const noChargesResponse = await fetch(`${baseUrl}/api/cases`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ title: "Case without entered charges" }),
+    });
+    assert.equal(noChargesResponse.status, 201);
+    const noCharges = await noChargesResponse.json();
+    assert.deepEqual(noCharges.charges, []);
 
     const checklistResponse = await fetch(`${baseUrl}/api/cases/${created.id}/checklist`, {
       method: "PATCH",
@@ -106,8 +125,15 @@ test("case API validates input and persists case, charge, and checklist changes"
 
     const deletion = await fetch(`${baseUrl}/api/cases/${created.id}`, { method: "DELETE" });
     assert.equal(deletion.status, 204);
+    const chargeCount = database.prepare("SELECT count(*) AS total FROM charges WHERE case_id = ?").get(created.id).total;
+    assert.equal(chargeCount, 0);
     const missing = await fetch(`${baseUrl}/api/cases/${created.id}`);
     assert.equal(missing.status, 404);
+
+    await fetch(`${baseUrl}/api/cases/${noCharges.id}`, { method: "DELETE" });
+
+    const unknownEndpoint = await fetch(`${baseUrl}/api/not-a-route`);
+    assert.equal(unknownEndpoint.status, 404);
   } finally {
     await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
     database.close();

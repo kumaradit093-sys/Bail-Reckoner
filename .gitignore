@@ -3,4 +3,7 @@
 database/*.sqlite
 database/*.sqlite-shm
 database/*.sqlite-wal
+.env
+.env.*
+!.env.example
 .DS_Store

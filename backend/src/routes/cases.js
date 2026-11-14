@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { createCase, deleteCase, getCase, listCases, updateCase, updateChecklist } from "../data/caseRepository.js";
+import { todayInIndia } from "../../../shared/date.js";
+import { checklistLength } from "../../../shared/checklist.js";
 
 const router = Router();
 const allowedStatuses = new Set(["In progress", "Information needed", "Ready for review"]);
-const checklistLength = 4;
 
 class HttpError extends Error {
   constructor(status, message) {
@@ -29,7 +30,7 @@ function validDate(value) {
   if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) {
     throw new HttpError(400, "Custody start date is not a valid date.");
   }
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayInIndia();
   if (value > today) throw new HttpError(400, "Custody start date cannot be in the future.");
   return value;
 }
@@ -103,12 +104,6 @@ router.delete("/:id", (request, response) => {
   requireCase(request.params.id);
   deleteCase(request.params.id);
   response.status(204).end();
-});
-
-router.use((error, _request, response, _next) => {
-  const status = error instanceof HttpError ? error.status : 500;
-  if (status === 500) console.error(error);
-  response.status(status).json({ error: status === 500 ? "The server could not complete the request." : error.message });
 });
 
 export { router as casesRouter };

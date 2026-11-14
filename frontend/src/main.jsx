@@ -1,30 +1,26 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { casesApi } from "./api.js";
 import { daysInCustody, relativeDuration } from "./custody.js";
+import { greetingForHour, todayInIndia } from "./date.js";
 import { validateCaseValues } from "./validation.js";
-
-const checklistLabels = [
-  "Confirm case reference and court details",
-  "Collect available case documents",
-  "Confirm custody dates and records",
-  "Review next steps with a legal aid provider",
-];
+import { checklistItems } from "../../shared/checklist.js";
 
 const fmtDate = (value) => value
-  ? new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" }).format(new Date(`${value}T00:00:00`))
+  ? new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${value}T00:00:00Z`))
   : "Not recorded";
 
 function Shell({ children, current = "Cases", onDashboard, apiError, onRetry }) {
   return <div className="shell">
     <aside className="sidebar" aria-label="Main navigation">
-      <a className="brand" href="#" onClick={(event) => { event.preventDefault(); onDashboard?.(); }}>
+      <a className="brand" href="#" aria-label="Bail Reckoner dashboard" onClick={(event) => { event.preventDefault(); onDashboard?.(); }}>
         <span className="brand-mark" aria-hidden="true">B</span>
         <span className="brand-name">bail reckoner<span className="brand-sub">case workspace</span></span>
       </a>
-      <div className="nav-label">Workspace</div>
-      <a href="#" className={`nav-item ${current === "Cases" ? "active" : ""}`} onClick={(event) => { event.preventDefault(); onDashboard?.(); }}><span className="nav-icon" aria-hidden="true">▦</span><span className="nav-text">Cases</span></a>
-      <a href="#" className="nav-item" onClick={(event) => event.preventDefault()}><span className="nav-icon" aria-hidden="true">⌕</span><span className="nav-text">Legal reference</span></a>
+      <nav aria-label="Workspace">
+        <div className="nav-label">Workspace</div>
+        <a href="#" aria-label="Cases" aria-current={current === "Cases" ? "page" : undefined} className={`nav-item ${current === "Cases" ? "active" : ""}`} onClick={(event) => { event.preventDefault(); onDashboard?.(); }}><span className="nav-icon" aria-hidden="true">▦</span><span className="nav-text">Cases</span></a>
+      </nav>
       <div className="sidebar-bottom">
         <div className="privacy-note"><strong>Demo workspace</strong>Fictional records are stored in a local SQLite file. Avoid entering real personal or case information.</div>
         <div className="user-row"><div className="avatar" aria-hidden="true">LA</div><div className="user-meta"><div className="user-name">Legal Aid User</div><div className="user-role">Demo account</div></div></div>
@@ -46,7 +42,7 @@ function Dashboard({ cases, query, onQuery, onCreate, onDetail, onDashboard, loa
   const filtered = cases.filter((item) => `${item.title} ${item.reference} ${item.jurisdiction}`.toLowerCase().includes(query.toLowerCase()));
   const totalCharges = cases.reduce((sum, item) => sum + item.charges.length, 0);
   return <Shell onDashboard={onDashboard} apiError={apiError} onRetry={onRetry}><div className="content">
-    <div className="page-head"><div><div className="eyebrow">Your workspace</div><h1>Good evening</h1><p className="intro">A clear place to organize case information and preparation.</p></div><button className="button button-primary" onClick={onCreate}><span aria-hidden="true">＋</span><span className="button-text-short">New case</span></button></div>
+    <div className="page-head"><div><div className="eyebrow">Your workspace</div><h1>{greetingForHour()}</h1><p className="intro">A clear place to organize case information and preparation.</p></div><button className="button button-primary" onClick={onCreate}><span aria-hidden="true">＋</span><span className="button-text-short">New case</span></button></div>
     <section className="stats" aria-label="Workspace summary">
       <article className="stat-card"><div className="stat-top"><span>Total cases</span><span className="stat-symbol" aria-hidden="true">▦</span></div><div className="stat-value">{cases.length}</div><div className="stat-foot">In this workspace</div></article>
       <article className="stat-card"><div className="stat-top"><span>Charges recorded</span><span className="stat-symbol" aria-hidden="true">≡</span></div><div className="stat-value">{totalCharges}</div><div className="stat-foot">Across all cases</div></article>
@@ -71,9 +67,9 @@ function ChargeFields({ charges, onChange }) {
   const remove = (index) => onChange(charges.length > 1 ? charges.filter((_, i) => i !== index) : charges.map(() => ({ statute: "", section: "", description: "" })));
   return <section className="panel form-card"><div className="charges-head"><div><h2>Charges</h2><p>Record the charges associated with this case.</p></div><button type="button" className="button button-quiet button-small" onClick={add}>＋ Add charge</button></div><div className="charge-list">
     {charges.map((charge, index) => <div className="charge-entry" key={index}>
-      <div className="field"><label htmlFor={`statute-${index}`}>Statute / Act</label><input id={`statute-${index}`} value={charge.statute} onChange={(event) => update(index, "statute", event.target.value)} placeholder="e.g. Name of Act" /></div>
-      <div className="field"><label htmlFor={`section-${index}`}>Section</label><input id={`section-${index}`} value={charge.section} onChange={(event) => update(index, "section", event.target.value)} placeholder="e.g. 115(2)" /></div>
-      <div className="field"><label htmlFor={`description-${index}`}>Short description <span className="optional">(optional)</span></label><input id={`description-${index}`} value={charge.description} onChange={(event) => update(index, "description", event.target.value)} placeholder="Brief offence description" /></div>
+      <div className="field"><label htmlFor={`statute-${index}`}>Statute / Act</label><input id={`statute-${index}`} maxLength="120" value={charge.statute} onChange={(event) => update(index, "statute", event.target.value)} placeholder="e.g. Name of Act" /></div>
+      <div className="field"><label htmlFor={`section-${index}`}>Section</label><input id={`section-${index}`} maxLength="80" value={charge.section} onChange={(event) => update(index, "section", event.target.value)} placeholder="e.g. 115(2)" /></div>
+      <div className="field"><label htmlFor={`description-${index}`}>Short description <span className="optional">(optional)</span></label><input id={`description-${index}`} maxLength="240" value={charge.description} onChange={(event) => update(index, "description", event.target.value)} placeholder="Brief offence description" /></div>
       <button type="button" className="charge-remove" onClick={() => remove(index)} aria-label={`Remove charge ${index + 1}`}>×</button>
     </div>)}
   </div></section>;
@@ -82,7 +78,7 @@ function ChargeFields({ charges, onChange }) {
 function CaseForm({ existing, onSave, onCancel, onDashboard, saving, apiError, onRetry }) {
   const [charges, setCharges] = useState(existing?.charges?.length ? existing.charges : [{ statute: "", section: "", description: "" }]);
   const [errors, setErrors] = useState({});
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayInIndia();
   function submit(event) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -129,7 +125,7 @@ function DetailPage({ item, onBack, onEdit, onDelete, onChecklist, onDashboard, 
       <section className="panel detail-card"><h2>Case information</h2><div className="detail-fields"><div><div className="detail-label">Status</div><span className="status">{item.status}</span></div><div><div className="detail-label">Case reference</div><div className="detail-value">{item.reference || "Not recorded"}</div></div><div><div className="detail-label">Court / jurisdiction</div><div className="detail-value">{item.jurisdiction || "Not recorded"}</div></div><div><div className="detail-label">Custody start date</div><div className="detail-value">{fmtDate(item.custodyStartDate)}</div></div><div className="full"><div className="detail-label">Notes</div><div className="detail-value notes">{item.notes || "No notes added."}</div></div></div></section>
       <section className="panel detail-card"><h2>Charges <span className="cell-muted">({item.charges.length})</span></h2>{item.charges.length ? item.charges.map((charge, index) => <div className="charge-detail" key={`${charge.section}-${index}`}><div className="charge-index">{index + 1}</div><div><div className="charge-name">{charge.description || "Charge"}</div><div className="charge-meta">{charge.statute || "Act not specified"}{charge.section ? ` · Section ${charge.section}` : ""}</div></div></div>) : <div className="small-note">No charges recorded.</div>}</section>
       <section className="panel detail-card"><h2>Custody timeline</h2><div className="timeline"><span className="timeline-dot" aria-hidden="true"></span><div><div className="timeline-title">Custody started</div><div className="timeline-date">{fmtDate(item.custodyStartDate)}</div></div></div><div className="duration-box"><div className="duration-number">{relativeDuration(elapsed)}</div><div className="duration-caption">Elapsed since the recorded custody start date{elapsed != null ? ` · ${elapsed} days` : ""}</div></div></section>
-    </div><aside className="detail-side"><section className="panel detail-card"><h2>Preparation checklist</h2><div className="checklist">{checklistLabels.map((label, index) => <label className="check-row" key={label}><input type="checkbox" checked={Boolean(item.checklist?.[index])} onChange={(event) => onChecklist(index, event.target.checked)} /><span>{label}</span></label>)}</div><div className="check-help">These are general organization prompts, not a complete list of legal requirements. Review next steps with a qualified legal aid provider.</div></section><section className="panel detail-card"><h2>About this record</h2><div className="detail-label">Created for</div><div className="detail-value detail-gap">Demo workspace</div><div className="detail-label">Data source</div><div className="detail-value">Fictional sample information</div><div className="check-help">Records are saved in this app's local SQLite database.</div></section></aside></div>
+    </div><aside className="detail-side"><section className="panel detail-card"><h2>Preparation checklist</h2><div className="checklist">{checklistItems.map((label, index) => <label className="check-row" key={label}><input type="checkbox" checked={Boolean(item.checklist?.[index])} onChange={(event) => onChecklist(index, event.target.checked)} /><span>{label}</span></label>)}</div><div className="check-help">These are general organization prompts, not a complete list of legal requirements. Review next steps with a qualified legal aid provider.</div></section><section className="panel detail-card"><h2>About this record</h2><div className="detail-label">Created for</div><div className="detail-value detail-gap">Demo workspace</div><div className="detail-label">Data source</div><div className="detail-value">Fictional sample information</div><div className="check-help">Records are saved in this app's local SQLite database.</div></section></aside></div>
     <Notice><strong>Informational only.</strong> This page organizes case information and calculates elapsed time from the recorded date. It does not assess legal eligibility or predict a bail outcome.</Notice>
   </div></Shell>;
 }
@@ -143,9 +139,14 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [apiError, setApiError] = useState("");
+  const toastTimer = useRef(null);
   const selected = cases.find((item) => item.id === selectedId) || null;
   const go = (nextPage, id = null) => { setPage(nextPage); setSelectedId(id); setQuery(""); window.scrollTo(0, 0); };
-  const notify = (message) => { setToast(message); window.setTimeout(() => setToast(""), 2400); };
+  const notify = (message) => {
+    window.clearTimeout(toastTimer.current);
+    setToast(message);
+    toastTimer.current = window.setTimeout(() => setToast(""), 2400);
+  };
   const loadCases = async () => {
     setLoading(true);
     setApiError("");
@@ -158,6 +159,7 @@ function App() {
     }
   };
   useEffect(() => { loadCases(); }, []);
+  useEffect(() => () => window.clearTimeout(toastTimer.current), []);
   const save = async (values) => {
     setSaving(true);
     setApiError("");
@@ -173,7 +175,7 @@ function App() {
     }
   };
   const deleteCase = async () => {
-    if (!selected || !window.confirm(`Delete “${selected.title}” from this demo session?`)) return;
+    if (!selected || !window.confirm(`Permanently delete “${selected.title}” and its charges from this local database?`)) return;
     setApiError("");
     try {
       await casesApi.remove(selected.id);

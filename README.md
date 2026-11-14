@@ -51,6 +51,7 @@ backend/                  Express API
   src/data/                Case repository used by API routes
   src/db/                  SQLite connection and migration runner
 database/                  SQLite file, migrations, and demo seed
+shared/                    Shared date and checklist definitions
 docs/                      Project plan and requirements
 ```
 

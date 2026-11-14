@@ -4,6 +4,11 @@ import { casesRouter } from "./routes/cases.js";
 
 const app = express();
 const frontendBuild = fileURLToPath(new URL("../../frontend/dist/", import.meta.url));
+const notFound = (request, _response, next) => {
+  const error = new Error(`No endpoint for ${request.method} ${request.path}.`);
+  error.status = 404;
+  next(error);
+};
 
 app.disable("x-powered-by");
 app.use(express.json({ limit: "100kb" }));
@@ -11,11 +16,7 @@ app.use(express.json({ limit: "100kb" }));
 app.get("/api/health", (_request, response) => response.json({ status: "ok" }));
 app.use("/api/cases", casesRouter);
 
-app.use("/api", (request, _response, next) => {
-  const error = new Error(`No endpoint for ${request.method} ${request.path}.`);
-  error.status = 404;
-  next(error);
-});
+app.use("/api", notFound);
 
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(frontendBuild));
@@ -26,11 +27,7 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-app.use((request, _response, next) => {
-  const error = new Error(`No endpoint for ${request.method} ${request.path}.`);
-  error.status = 404;
-  next(error);
-});
+app.use(notFound);
 
 app.use((error, _request, response, _next) => {
   const status = Number(error.status) >= 400 && Number(error.status) < 500 ? Number(error.status) : 500;

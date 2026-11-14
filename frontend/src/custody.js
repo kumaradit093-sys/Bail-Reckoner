@@ -1,8 +1,11 @@
+import { todayInIndia } from "../../shared/date.js";
+
 export function daysInCustody(value, today = new Date()) {
   if (!value) return null;
   const [year, month, day] = value.split("-").map(Number);
   const start = Date.UTC(year, month - 1, day);
-  const currentDay = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+  const [todayYear, todayMonth, todayDay] = todayInIndia(today).split("-").map(Number);
+  const currentDay = Date.UTC(todayYear, todayMonth - 1, todayDay);
   return Math.max(0, Math.floor((currentDay - start) / 86400000));
 }
 

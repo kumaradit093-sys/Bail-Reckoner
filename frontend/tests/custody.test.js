@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { daysInCustody, relativeDuration } from "../src/custody.js";
+import { greetingForHour } from "../src/date.js";
+import { todayInIndia } from "../../shared/date.js";
 import { validateCaseValues } from "../src/validation.js";
 
 test("custody duration is calculated from calendar dates", () => {
-  assert.equal(daysInCustody("2026-01-08", new Date(2026, 0, 10, 12)), 2);
-  assert.equal(daysInCustody("2026-01-11", new Date(2026, 0, 10, 12)), 0);
+  assert.equal(daysInCustody("2026-01-08", new Date("2026-01-10T12:00:00+05:30")), 2);
+  assert.equal(daysInCustody("2026-01-11", new Date("2026-01-10T12:00:00+05:30")), 0);
   assert.equal(daysInCustody("", new Date(2026, 0, 10)), null);
 });
 
@@ -13,6 +15,13 @@ test("custody duration is presented in simple units", () => {
   assert.equal(relativeDuration(null), "Not recorded");
   assert.equal(relativeDuration(0), "0 days");
   assert.equal(relativeDuration(400), "1 year, 1 month");
+});
+
+test("date limits and greeting use the Indian calendar and local time of day", () => {
+  assert.equal(todayInIndia(new Date("2026-01-01T20:00:00.000Z")), "2026-01-02");
+  assert.equal(greetingForHour(8), "Good morning");
+  assert.equal(greetingForHour(14), "Good afternoon");
+  assert.equal(greetingForHour(19), "Good evening");
 });
 
 test("case form validation requires a title and rejects future custody dates", () => {
