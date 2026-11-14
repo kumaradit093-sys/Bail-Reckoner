@@ -4,7 +4,7 @@ A basic full-stack prototype for organizing undertrial case information. It uses
 
 ## Run the app
 
-Install dependencies once, then start both services in separate terminal windows from the repository root:
+Install dependencies once. `.env.example` documents the settings. A local, gitignored `.env` is already supplied for this workspace; on a fresh checkout, copy the template with `cp .env.example .env` before changing local settings. The backend and Vite proxy read it automatically. Then start both services in separate terminal windows from the repository root:
 
 ```sh
 npm install
@@ -24,7 +24,7 @@ npm run dev
 
 Open the local URL printed by Vite (usually <http://localhost:5173>). Vite forwards `/api` requests to the backend on port 3001. On its first start, the backend creates `database/bail-reckoner.sqlite`, applies SQL migrations, and inserts fictional demo records. Case edits persist after restarting the backend.
 
-Node.js 22.13 or later is required for the built-in SQLite module. The module's stability status depends on the Node release; the detected Node 24.7 runtime classifies it as experimental, so this setup is for the local MVP rather than production legal data. Set `BAIL_RECKONER_DB` to use a different database file path.
+Node.js 22.13 or later is required for the built-in SQLite module. The module's stability status depends on the Node release; the detected Node 24.7 runtime classifies it as experimental, so this setup is for the local MVP rather than production legal data. `BAIL_RECKONER_DB` controls the local database file path. The Vite proxy uses `PORT` by default; `API_PROXY_TARGET` is an optional override. Docker Compose always sets the database path to `/data/bail-reckoner.sqlite` inside its persistent volume.
 
 ## Test and build
 

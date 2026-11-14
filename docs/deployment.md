@@ -22,6 +22,8 @@ docker compose up --build -d
 
 Open <http://localhost:3001>. Check service health at <http://localhost:3001/api/health>. Stop the service with `docker compose down`; the named database volume remains. To remove that volume and its data, use `docker compose down --volumes` only when you intend to permanently delete the demo records.
 
+Compose reads `PORT` from the root `.env` file (default `3001`) for the published and container port. It deliberately overrides `BAIL_RECKONER_DB` to `/data/bail-reckoner.sqlite` so the named volume remains the database location. `API_PROXY_TARGET` is only used by the local Vite development server.
+
 For a Docker-compatible hosting platform, deploy this image and attach persistent storage at `/data`. The service listens on port `3001`; configure the platform's HTTPS endpoint in front of it. Do not run multiple app replicas against a shared SQLite file.
 
 ## Scope and deployment limits

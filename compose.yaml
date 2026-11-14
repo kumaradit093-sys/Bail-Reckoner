@@ -2,16 +2,16 @@ services:
   bail-reckoner:
     build: .
     ports:
-      - "3001:3001"
+      - "${PORT:-3001}:${PORT:-3001}"
     environment:
       NODE_ENV: production
-      PORT: 3001
+      PORT: ${PORT:-3001}
       BAIL_RECKONER_DB: /data/bail-reckoner.sqlite
     volumes:
       - bail-reckoner-data:/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:${PORT:-3001}/api/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 3
