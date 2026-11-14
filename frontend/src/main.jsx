@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { casesApi } from "./api.js";
+import { daysInCustody, relativeDuration } from "./custody.js";
+import { validateCaseValues } from "./validation.js";
 
 const checklistLabels = [
   "Confirm case reference and court details",
@@ -13,27 +15,6 @@ const fmtDate = (value) => value
   ? new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" }).format(new Date(`${value}T00:00:00`))
   : "Not recorded";
 
-function daysInCustody(value) {
-  if (!value) return null;
-  const [year, month, day] = value.split("-").map(Number);
-  const start = Date.UTC(year, month - 1, day);
-  const now = new Date();
-  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-  return Math.max(0, Math.floor((today - start) / 86400000));
-}
-
-function relativeDuration(days) {
-  if (days == null) return "Not recorded";
-  const years = Math.floor(days / 365);
-  const months = Math.floor((days % 365) / 30);
-  const remaining = days - years * 365 - months * 30;
-  const parts = [];
-  if (years) parts.push(`${years} ${years === 1 ? "year" : "years"}`);
-  if (months || years) parts.push(`${months} ${months === 1 ? "month" : "months"}`);
-  if (!years && !months) parts.push(`${remaining} ${remaining === 1 ? "day" : "days"}`);
-  return parts.join(", ");
-}
-
 function Shell({ children, current = "Cases", onDashboard, apiError, onRetry }) {
   return <div className="shell">
     <aside className="sidebar" aria-label="Main navigation">
@@ -45,7 +26,7 @@ function Shell({ children, current = "Cases", onDashboard, apiError, onRetry }) 
       <a href="#" className={`nav-item ${current === "Cases" ? "active" : ""}`} onClick={(event) => { event.preventDefault(); onDashboard?.(); }}><span className="nav-icon" aria-hidden="true">▦</span><span className="nav-text">Cases</span></a>
       <a href="#" className="nav-item" onClick={(event) => event.preventDefault()}><span className="nav-icon" aria-hidden="true">⌕</span><span className="nav-text">Legal reference</span></a>
       <div className="sidebar-bottom">
-        <div className="privacy-note"><strong>Demo workspace</strong>Sample records are held in backend memory and reset when the backend restarts. Avoid entering real personal or case information.</div>
+        <div className="privacy-note"><strong>Demo workspace</strong>Fictional records are stored in a local SQLite file. Avoid entering real personal or case information.</div>
         <div className="user-row"><div className="avatar" aria-hidden="true">LA</div><div className="user-meta"><div className="user-name">Legal Aid User</div><div className="user-role">Demo account</div></div></div>
       </div>
     </aside>
@@ -80,7 +61,7 @@ function Dashboard({ cases, query, onQuery, onCreate, onDetail, onDashboard, loa
         <div><button className="button button-quiet button-small" onClick={() => onDetail(item.id)} aria-label={`Open ${item.title}`}>View →</button></div>
       </div>)}</div> : <div className="empty-state"><div className="empty-icon" aria-hidden="true">⌕</div><h3>{cases.length ? "No matching cases" : "No cases yet"}</h3><p>{cases.length ? "Try a different search term." : "Add a case to start organizing the details."}</p>{!cases.length && <button className="button button-primary" onClick={onCreate}>＋ Add first case</button>}</div>}
     </section>
-    <Notice><strong>Demo only.</strong> This workspace helps organize information. It does not provide legal advice or determine bail eligibility. Example records are fictional and reset when the backend restarts.</Notice>
+    <Notice><strong>Demo only.</strong> This workspace helps organize information. It does not provide legal advice or determine bail eligibility. Example records are fictional and stored in the local database.</Notice>
   </div></Shell>;
 }
 
@@ -114,9 +95,7 @@ function CaseForm({ existing, onSave, onCancel, onDashboard, saving, apiError, o
       notes: String(data.get("notes") || "").trim(),
       charges: charges.filter((charge) => charge.statute.trim() || charge.section.trim() || charge.description.trim()).map((charge) => ({ statute: charge.statute.trim(), section: charge.section.trim(), description: charge.description.trim() })),
     };
-    const nextErrors = {};
-    if (!values.title) nextErrors.title = "Enter a case title.";
-    if (values.custodyStartDate && values.custodyStartDate > today) nextErrors.custodyStartDate = "Date cannot be in the future.";
+    const nextErrors = validateCaseValues(values, today);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
       document.querySelector(nextErrors.title ? "#case-title" : "#custody-date")?.focus();
@@ -150,7 +129,7 @@ function DetailPage({ item, onBack, onEdit, onDelete, onChecklist, onDashboard, 
       <section className="panel detail-card"><h2>Case information</h2><div className="detail-fields"><div><div className="detail-label">Status</div><span className="status">{item.status}</span></div><div><div className="detail-label">Case reference</div><div className="detail-value">{item.reference || "Not recorded"}</div></div><div><div className="detail-label">Court / jurisdiction</div><div className="detail-value">{item.jurisdiction || "Not recorded"}</div></div><div><div className="detail-label">Custody start date</div><div className="detail-value">{fmtDate(item.custodyStartDate)}</div></div><div className="full"><div className="detail-label">Notes</div><div className="detail-value notes">{item.notes || "No notes added."}</div></div></div></section>
       <section className="panel detail-card"><h2>Charges <span className="cell-muted">({item.charges.length})</span></h2>{item.charges.length ? item.charges.map((charge, index) => <div className="charge-detail" key={`${charge.section}-${index}`}><div className="charge-index">{index + 1}</div><div><div className="charge-name">{charge.description || "Charge"}</div><div className="charge-meta">{charge.statute || "Act not specified"}{charge.section ? ` · Section ${charge.section}` : ""}</div></div></div>) : <div className="small-note">No charges recorded.</div>}</section>
       <section className="panel detail-card"><h2>Custody timeline</h2><div className="timeline"><span className="timeline-dot" aria-hidden="true"></span><div><div className="timeline-title">Custody started</div><div className="timeline-date">{fmtDate(item.custodyStartDate)}</div></div></div><div className="duration-box"><div className="duration-number">{relativeDuration(elapsed)}</div><div className="duration-caption">Elapsed since the recorded custody start date{elapsed != null ? ` · ${elapsed} days` : ""}</div></div></section>
-    </div><aside className="detail-side"><section className="panel detail-card"><h2>Preparation checklist</h2><div className="checklist">{checklistLabels.map((label, index) => <label className="check-row" key={label}><input type="checkbox" checked={Boolean(item.checklist?.[index])} onChange={(event) => onChecklist(index, event.target.checked)} /><span>{label}</span></label>)}</div><div className="check-help">These are general organization prompts, not a complete list of legal requirements. Review next steps with a qualified legal aid provider.</div></section><section className="panel detail-card"><h2>About this record</h2><div className="detail-label">Created for</div><div className="detail-value detail-gap">Demo workspace</div><div className="detail-label">Data source</div><div className="detail-value">Fictional sample information</div><div className="check-help">Records are held in backend memory and reset when the backend restarts.</div></section></aside></div>
+    </div><aside className="detail-side"><section className="panel detail-card"><h2>Preparation checklist</h2><div className="checklist">{checklistLabels.map((label, index) => <label className="check-row" key={label}><input type="checkbox" checked={Boolean(item.checklist?.[index])} onChange={(event) => onChecklist(index, event.target.checked)} /><span>{label}</span></label>)}</div><div className="check-help">These are general organization prompts, not a complete list of legal requirements. Review next steps with a qualified legal aid provider.</div></section><section className="panel detail-card"><h2>About this record</h2><div className="detail-label">Created for</div><div className="detail-value detail-gap">Demo workspace</div><div className="detail-label">Data source</div><div className="detail-value">Fictional sample information</div><div className="check-help">Records are saved in this app's local SQLite database.</div></section></aside></div>
     <Notice><strong>Informational only.</strong> This page organizes case information and calculates elapsed time from the recorded date. It does not assess legal eligibility or predict a bail outcome.</Notice>
   </div></Shell>;
 }

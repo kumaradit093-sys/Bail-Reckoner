@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite",
     "server": "node backend/src/index.js",
+    "test": "node --test",
     "build": "vite build",
     "preview": "vite preview"
   },

@@ -26,6 +26,21 @@ Open the local URL printed by Vite (usually <http://localhost:5173>). Vite forwa
 
 Node.js 22.13 or later is required for the built-in SQLite module. The module's stability status depends on the Node release; the detected Node 24.7 runtime classifies it as experimental, so this setup is for the local MVP rather than production legal data. Set `BAIL_RECKONER_DB` to use a different database file path.
 
+## Test and build
+
+```sh
+npm test
+npm run build
+```
+
+## Container deployment
+
+```sh
+docker compose up --build -d
+```
+
+The app is available at <http://localhost:3001>. See [deployment notes](docs/deployment.md) for storage and demo-only limits.
+
 ## Project structure
 
 ```text
