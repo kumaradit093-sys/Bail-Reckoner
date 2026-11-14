@@ -24,6 +24,18 @@ npm run dev
 
 Open the local URL printed by Vite (usually <http://localhost:5173>). Vite forwards `/api` requests to the backend on port 3001. The API stores records in memory until Phase 3 adds a database.
 
+## Project structure
+
+```text
+frontend/                 React app and styles
+  src/                    React screens and API client
+backend/                  Express API
+  src/routes/              HTTP endpoints and request validation
+  src/data/                Temporary in-memory case repository
+database/                  Reserved for Phase 3 schema and migrations
+docs/                      Project plan and requirements
+```
+
 ## Current scope
 
 The prototype includes a case dashboard, search, create/edit/detail flows, multiple charges, elapsed custody duration, and a basic editable preparation checklist. It does not provide legal advice, determine bail eligibility, or predict a bail outcome.

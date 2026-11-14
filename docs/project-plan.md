@@ -118,7 +118,7 @@ For the MVP, checklist items may be stored as a simple list associated with a ca
 - **Database:** Relational database with a one-to-many relationship from cases to charges.
 - **Integration:** Frontend communicates with the backend over JSON HTTP endpoints; backend accesses the database through a small data-access layer.
 
-For the Phase 2 integration milestone, the API uses temporary in-memory storage. Phase 3 replaces that storage with the database; restarting the API currently resets records.
+For the Phase 2 integration milestone, React files live under `frontend/`, Express routes under `backend/src/routes/`, and a temporary in-memory repository under `backend/src/data/`. The `database/` folder is reserved for the Phase 3 schema, migrations, and seeds. Phase 3 replaces the in-memory repository behind the API boundary; restarting the API currently resets records.
 
 This repository uses React with Vite for the frontend and Express for the API. The relational database choice is deferred to Phase 3. Keep the implementation easy to run locally and avoid adding services the MVP does not need.
 
