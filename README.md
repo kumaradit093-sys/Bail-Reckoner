@@ -1,6 +1,6 @@
 # Bail Reckoner
 
-A basic full-stack prototype for organizing undertrial case information. It uses fictional sample records and in-memory server state; changes reset when the backend restarts. Do not enter real personal or case information.
+A basic full-stack prototype for organizing undertrial case information. It uses fictional sample records and a local SQLite database. Do not enter real personal or case information.
 
 ## Run the app
 
@@ -22,7 +22,9 @@ Terminal 2 — React frontend:
 npm run dev
 ```
 
-Open the local URL printed by Vite (usually <http://localhost:5173>). Vite forwards `/api` requests to the backend on port 3001. The API stores records in memory until Phase 3 adds a database.
+Open the local URL printed by Vite (usually <http://localhost:5173>). Vite forwards `/api` requests to the backend on port 3001. On its first start, the backend creates `database/bail-reckoner.sqlite`, applies SQL migrations, and inserts fictional demo records. Case edits persist after restarting the backend.
+
+Node.js 22.13 or later is required for the built-in SQLite module. The module's stability status depends on the Node release; the detected Node 24.7 runtime classifies it as experimental, so this setup is for the local MVP rather than production legal data. Set `BAIL_RECKONER_DB` to use a different database file path.
 
 ## Project structure
 
@@ -31,8 +33,9 @@ frontend/                 React app and styles
   src/                    React screens and API client
 backend/                  Express API
   src/routes/              HTTP endpoints and request validation
-  src/data/                Temporary in-memory case repository
-database/                  Reserved for Phase 3 schema and migrations
+  src/data/                Case repository used by API routes
+  src/db/                  SQLite connection and migration runner
+database/                  SQLite file, migrations, and demo seed
 docs/                      Project plan and requirements
 ```
 

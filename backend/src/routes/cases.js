@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createCase, deleteCase, getCase, listCases, updateCase, updateChecklist } from "../data/caseStore.js";
+import { createCase, deleteCase, getCase, listCases, updateCase, updateChecklist } from "../data/caseRepository.js";
 
 const router = Router();
 const allowedStatuses = new Set(["In progress", "Information needed", "Ready for review"]);

@@ -61,11 +61,11 @@ The project brief in the supplied image is the source of the product idea. It me
 6. Connect the frontend screens to the API, replacing mock data. Support refresh/loading, empty, success, and error states.
 7. Ensure forms submit to the API and the dashboard/detail views refresh from persisted API responses.
 
-**Phase 2 outcome:** The frontend can perform the main case workflow through a working API. During development, the API may temporarily use in-memory data until Phase 3.
+**Phase 2 outcome:** The frontend can perform the main case workflow through the API. Phase 3 adds persistent storage behind the API without changing the frontend contract.
 
 ### Phase 3 — Database and integration
 
-1. Select a database suitable for a small app and the expected hosting environment; document how to run it locally.
+1. Use SQLite for the local MVP and document the database setup and location.
 2. Define a minimal schema with `Case` and `Charge` records. A case has many charges; charges belong to one case.
 3. Add migrations/schema setup and a small synthetic seed dataset for local development.
 4. Implement backend data-access functions and replace temporary in-memory storage with database reads/writes.
@@ -115,12 +115,12 @@ For the MVP, checklist items may be stored as a simple list associated with a ca
 
 - **Frontend:** Responsive React single-page app built with Vite, with separate components for dashboard, case form, and case detail.
 - **Backend:** Small REST API responsible for validation, case/charge operations, date calculation, and errors.
-- **Database:** Relational database with a one-to-many relationship from cases to charges.
+- **Database:** SQLite for the local MVP, with a relational one-to-many relationship from cases to charges and linked checklist rows.
 - **Integration:** Frontend communicates with the backend over JSON HTTP endpoints; backend accesses the database through a small data-access layer.
 
-For the Phase 2 integration milestone, React files live under `frontend/`, Express routes under `backend/src/routes/`, and a temporary in-memory repository under `backend/src/data/`. The `database/` folder is reserved for the Phase 3 schema, migrations, and seeds. Phase 3 replaces the in-memory repository behind the API boundary; restarting the API currently resets records.
+React files live under `frontend/`, Express routes under `backend/src/routes/`, and the case repository under `backend/src/data/`. SQLite connection and migration setup live under `backend/src/db/`; SQL schema and seed migrations live in `database/migrations/`.
 
-This repository uses React with Vite for the frontend and Express for the API. The relational database choice is deferred to Phase 3. Keep the implementation easy to run locally and avoid adding services the MVP does not need.
+This repository uses React with Vite, Express, and SQLite. Keep the implementation easy to run locally and avoid adding services the MVP does not need.
 
 ## 7. MVP acceptance criteria
 
